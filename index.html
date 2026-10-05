@@ -19,7 +19,7 @@
     font-family: -apple-system, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif; }
   #stage { position: fixed; left: 0; top: calc(-1 * var(--T, 0px)); width: 440px; height: var(--SH, 956px);
     transform-origin: 0 0; transform: scale(var(--s, 1)); }
-  .glassbtn { position: absolute; top: 62px; width: 44px; height: 44px; border-radius: 50%; background: #1c1c1c;
+  .glassbtn { position: absolute; top: 62px; width: 44px; height: 44px; border-radius: 50%; background: #232323;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(255,255,255,0.08);
     display: flex; align-items: center; justify-content: center; transition: background .45s ease-out; }
   .glassbtn.p { background: #3d3d3d; transition: background .07s; }
@@ -33,26 +33,27 @@
   #pad { position: absolute; left: 16px; bottom: 62px; display: grid; grid-template-columns: repeat(4, 96px);
     grid-auto-rows: 90px; gap: 8px; }
   .k { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 38px; letter-spacing: -0.5px;
-    background: #2f2f2f; color: #fff;
-    box-shadow: inset 0 0 0 0.6px rgba(255,255,255,0.13), inset 0 1.2px 1.6px rgba(255,255,255,0.09),
-      inset 0 -1.6px 3px rgba(255,255,255,0.15);
+    background: #353535; color: #fff;
+    /* glass rim: a bright hairline top and (brighter) bottom, each with a soft glow fading inward */
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 3px 4px -1px rgba(255,255,255,0.06),
+      inset 0 -1px 0 rgba(255,255,255,0.25), inset 0 -2.5px 3px -1px rgba(255,255,255,0.08);
     transition: background-color .45s ease-out, transform .45s ease-out; }
-  .k.f { background: #565656; } .k.o { background: #fd8701; }
+  .k.f { background: #616161; } .k.o { background: #ff9500; }
   .k svg { overflow: visible; }
   /* press: lights up and swells in ~70ms, fades back over ~450ms (measured frame by frame) */
-  .k.p { transition: background-color .07s, transform .07s; background: #656565; transform: scale(1.07); }
-  .k.f.p { background: #bababa; transform: none; } .k.o.p { background: #ffbc00; }
+  .k.p { transition: background-color .07s, transform .07s; background: #727272; transform: scale(1.07); }
+  .k.f.p { background: #d2d2d2; transform: none; } .k.o.p { background: #ffc70a; }
 
   /* ---- history sheet ---- */
   #dim { position: absolute; inset: 0; background: rgba(0,0,0,0.45); opacity: 0; pointer-events: none; transition: opacity .3s; }
   #dim.on { opacity: 1; pointer-events: auto; }
   #sheet { position: absolute; left: 8.5px; right: 8.5px; bottom: 8px; top: 451px; border-radius: 46px; overflow: hidden;
-    background: rgba(34,34,34,0.5); -webkit-backdrop-filter: blur(13px) saturate(1.5); backdrop-filter: blur(13px) saturate(1.5);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12); transform: translateY(110%); will-change: transform; }
+    background: rgba(64,64,64,0.5); -webkit-backdrop-filter: blur(11px) brightness(1.4) saturate(1.3); backdrop-filter: blur(11px) brightness(1.4) saturate(1.3);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25); transform: translateY(110%); will-change: transform; }
   #sheet.anim { transition: transform .38s cubic-bezier(.25,1.12,.4,1); }
   #grab { position: absolute; left: 50%; top: 6px; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: rgba(255,255,255,0.3); }
   #shead { position: absolute; left: 0; right: 0; top: 0; height: 80px; }
-  .sbtn { position: absolute; top: 19px; height: 44px; border-radius: 22px; background: rgba(255,255,255,0.1);
+  .sbtn { position: absolute; top: 19px; height: 44px; border-radius: 22px; background: rgba(255,255,255,0.14);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 17px; }
   #hedit { left: 18px; padding: 0 17px; } #hclose { right: 18px; width: 44px; }
   #hlist { position: absolute; left: 0; right: 0; top: 80px; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -66,18 +67,18 @@
   #hempty { color: #8a8a8e; text-align: center; font-size: 17px; padding-top: 120px; }
 
   /* ---- mode menu (grows out of the calculator button) ---- */
-  #menu { position: absolute; left: 170.5px; top: 62px; width: 249px; height: 208px; border-radius: 34px;
+  #menu { position: absolute; left: 170.5px; top: 62px; width: 249px; height: 208px; border-radius: 34px; overflow: hidden;
     background: rgba(36,36,36,0.88); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 30px rgba(0,0,0,0.4);
-    transform-origin: 227px 22px; transform: scale(0.18, 0.21); opacity: 0; filter: blur(8px); pointer-events: none;
-    transition: transform .3s cubic-bezier(.3,1.15,.5,1), opacity .2s, filter .25s; }
-  #menu.on { transform: none; opacity: 1; filter: none; pointer-events: auto; }
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 8px 30px rgba(0,0,0,0.4);
+    visibility: hidden; pointer-events: none; }
+  #menu.on { visibility: visible; pointer-events: auto; }
+  #mc { position: absolute; inset: 0; }
+  #mchk { transform-box: fill-box; transform-origin: center; }
   #menu .m { position: absolute; left: 0; right: 0; height: 42px; font-size: 17px; display: flex; align-items: center; }
-  #menu .m svg { position: absolute; left: 41px; width: 26px; height: 22px; overflow: visible; }
+  #micons { position: absolute; left: 14.5px; top: 13px; width: 55px; height: 185px; }
   #menu .m span { position: absolute; left: 79px; }
-  #menu .m .chk { left: 20px; }
-  #modebtn.hid { opacity: 0; transition: opacity .15s; }
-  #menu hr { position: absolute; left: 24px; right: 24px; top: 146px; margin: 0; border: 0; border-top: 0.5px solid rgba(255,255,255,0.18); }
+  #modebtn.hid { opacity: 0; }
+  #menu hr { position: absolute; left: 24px; right: 24px; top: 145.7px; margin: 0; border: 0; height: 1px; background: rgba(255,255,255,0.08); }
   #catch { position: absolute; inset: 0; display: none; }
   #catch.on { display: block; }
 </style>
@@ -115,12 +116,24 @@
   </div>
 
   <div id="catch"></div>
-  <div id="menu">
-    <div class="m" style="top:10px"><span class="chk">✓</span><svg viewBox="0 0 26 22"><g stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M1 5.5h7M4.5 2v7M15 5.5h8M1.5 13.5l6 6M7.5 13.5l-6 6M15 16.5h8"/></g><circle cx="19" cy="13" r="1.1" fill="#fff"/><circle cx="19" cy="20" r="1.1" fill="#fff"/></svg><span>Basic</span></div>
-    <div class="m" style="top:52px"><svg viewBox="0 0 26 22"><text x="0" y="17" fill="#fff" font-size="17" font-style="italic" font-family="-apple-system">ƒ</text><text x="8" y="16" fill="#fff" font-size="15" font-family="-apple-system">(x)</text></svg><span>Scientific</span></div>
-    <div class="m" style="top:94px"><svg viewBox="0 0 26 22"><g stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M3 2l3 4 3-4M6 6v4M1.5 12h20M11 1.5v19M14 15l5 5M19 15l-5 5"/></g></svg><span>Math Notes</span></div>
+  <div id="menu"><div id="mc">
+    <!-- check mark + icons traced from a real 1320px screenshot, in that crop's pixels (9 px = 1 pt) -->
+    <svg id="micons" viewBox="0 0 495 1665" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+      <path id="mchk" d="M68 165L105 205L155 125" stroke-width="16"/>
+      <path d="M281 122H345M313 90V154M374 122H439M287 177L343 233M343 177L287 233M374 207H439" stroke-width="14"/>
+      <circle cx="406" cy="182" r="9" fill="#fff" stroke="none"/><circle cx="406" cy="232" r="9" fill="#fff" stroke="none"/>
+      <path d="M337 497C318 482 300 492 296 515L282 575C278 594 266 596 260 589M279 533H318" stroke-width="13"/>
+      <path d="M361 487C341 515 341 572 361 600M440 487C460 515 460 572 440 600M376 507L414 575M414 507L376 575" stroke-width="12"/>
+      <path d="M296 850L312 870L329 850M312 870V889" stroke-width="10"/>
+      <path d="M360 840V1000M281 918H442M282 982C330 982 346 958 360 918C373 880 396 857 440 857" stroke-width="12"/>
+      <path d="M396 954L428 991M428 954L396 991" stroke-width="10"/>
+      <path d="M292 1443H430M325 1407L291 1443L325 1478M292 1528H430M397 1492L431 1528L397 1564" stroke-width="13"/>
+    </svg>
+    <div class="m" style="top:10px"><span>Basic</span></div>
+    <div class="m" style="top:52px"><span>Scientific</span></div>
+    <div class="m" style="top:94px"><span>Math Notes</span></div>
     <hr>
-    <div class="m" style="top:157px"><svg viewBox="0 0 26 22"><g stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M23 6.5H3M7.5 2L3 6.5 7.5 11M3 15.5h20M18.5 11l4.5 4.5-4.5 4.5"/></g></svg><span>Convert</span></div>
+    <div class="m" style="top:157px"><span>Convert</span></div></div>
   </div>
 </div>
 
@@ -347,8 +360,36 @@
 
   // ---- mode menu: opens, stays put; any touch closes it ----
   const menu = $('menu'), cat = $('catch');
-  function openMenu() { menu.classList.add('on'); cat.classList.add('on'); $('modebtn').classList.add('hid'); }
-  function closeMenu() { menu.classList.remove('on'); cat.classList.remove('on'); $('modebtn').classList.remove('hid'); }
+  // Liquid-glass droplet, keyframes measured frame by frame from the screen recording (60 fps). Open: the button turns
+  // into a blurry ~130pt blob that swells into the menu, overshooting downward and settling; contents start magnified
+  // and blurred, the check mark pops in last. Close: contents blur away, the empty blob shrinks back into the button.
+  // f = [offset, dx, dy, scaleX, scaleY, radius] relative to the final menu (centre 295,166; 249x208).
+  const mc = $('mc'), chk = $('mchk'), mbtn = $('modebtn');
+  const frames = f => f.map(([o, x, y, sx, sy, r]) => ({ offset: o, transform: `translate(${x}px,${y}px) scale(${sx},${sy})`, borderRadius: r }));
+  const OPEN = [[0, 50, -5, .52, .59, '50%'], [.23, 12, 29, .86, .89, '40%'], [.37, 4, 20, .96, 1.04, '28%'], [.47, 0, 17, 1, 1.04, '22%'],
+    [.53, 0, 7, 1.02, .99, '34px'], [.7, 0, 0, 1, 1, '34px'], [1, 0, 0, 1, 1, '34px']];
+  const CLOSE = [[0, 0, 0, 1, 1, '34px'], [.17, 8, 12, .93, .95, '40px'], [.27, 25, 25, .75, .82, '30%'], [.4, 42, 1, .58, .66, '42%'],
+    [.5, 60, -31, .43, .57, '50%'], [.6, 72, -60, .31, .48, '50%'], [.7, 85, -72, .23, .36, '50%'], [.83, 95, -74, .16, .29, '50%'],
+    [1, 102, -82, .1, .15, '50%']];
+  let anims = [];
+  const play = (el, kf, ms) => { const a = el.animate(kf, { duration: ms, easing: 'linear', fill: 'both' }); anims.push(a); return a; };
+  function openMenu() {
+    anims.forEach(a => a.cancel()); anims = [];
+    menu.classList.add('on'); cat.classList.add('on'); mbtn.classList.add('hid');
+    play(menu, frames(OPEN), 300);
+    play(mc, [{ offset: 0, transform: 'scale(2)', filter: 'blur(5px)' }, { offset: .23, transform: 'scale(1.26)', filter: 'blur(2.5px)' },
+      { offset: .37, transform: 'scale(1.05)', filter: 'blur(1px)' }, { offset: .53, transform: 'none', filter: 'blur(0px)' }, { offset: 1, transform: 'none', filter: 'blur(0px)' }], 300);
+    play(chk, [{ offset: 0, opacity: 0, transform: 'scale(1.6)' }, { offset: .5, opacity: 0, transform: 'scale(1.6)' },
+      { offset: .6, opacity: 1, transform: 'scale(1.35)' }, { offset: .75, opacity: 1, transform: 'none' }, { offset: 1, opacity: 1, transform: 'none' }], 300);
+  }
+  function closeMenu() {
+    anims.forEach(a => a.cancel()); anims = [];
+    cat.classList.remove('on');
+    const a = play(menu, frames(CLOSE).map((k, i) => ({ ...k, opacity: i === CLOSE.length - 1 ? 0 : 1 })), 300);
+    play(mc, [{ offset: 0, opacity: 1, filter: 'blur(0px)' }, { offset: .17, opacity: .7, filter: 'blur(1px)' }, { offset: .4, opacity: 0, filter: 'blur(3px)' }, { offset: 1, opacity: 0, filter: 'blur(3px)' }], 300);
+    setTimeout(() => mbtn.classList.remove('hid'), 150);
+    a.onfinish = () => { menu.classList.remove('on'); anims.forEach(x => x.cancel()); anims = []; };
+  }
   cat.addEventListener('pointerdown', closeMenu);
   menu.querySelectorAll('.m').forEach(m => m.addEventListener('click', closeMenu));
 
