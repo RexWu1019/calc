@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calculator">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  /* Laid out on a 440pt-wide stage (iPhone 17 Pro Max, iOS 27 Calculator screen recording 2026-10-06) scaled to the
+     screen width. Top buttons hang from the top of the screen, the keypad and display sit on the bottom edge. */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; }
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden; touch-action: none;
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif; }
+  #stage { position: fixed; left: 0; top: calc(-1 * var(--T, 0px)); width: 440px; height: var(--SH, 956px);
+    transform-origin: 0 0; transform: scale(var(--s, 1)); }
+  .glassbtn { position: absolute; top: 62px; width: 44px; height: 44px; border-radius: 50%; background: #1c1c1c;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center; transition: background .45s ease-out; }
+  .glassbtn.p { background: #3d3d3d; transition: background .07s; }
+  #histbtn { left: 20px; } #modebtn { right: 20px; }
+
+  #expr, #main { position: absolute; right: 20px; white-space: nowrap; line-height: 1; text-align: right;
+    font-variant-numeric: proportional-nums; transform-origin: 100% 100%; }
+  #expr { right: 17.5px; bottom: 646.5px; font-size: 33px; color: #828186; }
+  #main { right: 15.5px; bottom: 560.4px; font-size: 75px; font-weight: 400; }
+
+  #pad { position: absolute; left: 16px; bottom: 62px; display: grid; grid-template-columns: repeat(4, 96px);
+    grid-auto-rows: 90px; gap: 8px; }
+  .k { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 38px; letter-spacing: -0.5px;
+    background: #2f2f2f; color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(255,255,255,0.07);
+    transition: background-color .45s ease-out, transform .45s ease-out; }
+  .k.f { background: #565656; } .k.o { background: #fd8701; }
+  .k svg { overflow: visible; }
+  /* press: lights up and swells in ~70ms, fades back over ~450ms (measured frame by frame) */
+  .k.p { transition: background-color .07s, transform .07s; background: #656565; transform: scale(1.07); }
+  .k.f.p { background: #bababa; transform: none; } .k.o.p { background: #ffbc00; }
+
+  /* ---- history sheet ---- */
+  #dim { position: absolute; inset: 0; background: rgba(0,0,0,0.45); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  #dim.on { opacity: 1; pointer-events: auto; }
+  #sheet { position: absolute; left: 8.5px; right: 8.5px; bottom: 8px; top: 451px; border-radius: 46px; overflow: hidden;
+    background: rgba(34,34,34,0.5); -webkit-backdrop-filter: blur(13px) saturate(1.5); backdrop-filter: blur(13px) saturate(1.5);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12); transform: translateY(110%); will-change: transform; }
+  #sheet.anim { transition: transform .38s cubic-bezier(.25,1.12,.4,1); }
+  #grab { position: absolute; left: 50%; top: 6px; width: 40px; height: 5px; margin-left: -20px; border-radius: 3px; background: rgba(255,255,255,0.3); }
+  #shead { position: absolute; left: 0; right: 0; top: 0; height: 80px; }
+  .sbtn { position: absolute; top: 19px; height: 44px; border-radius: 22px; background: rgba(255,255,255,0.1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+  #hedit { left: 18px; padding: 0 17px; } #hclose { right: 18px; width: 44px; }
+  #hlist { position: absolute; left: 0; right: 0; top: 80px; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 0 18px 30px; touch-action: pan-y; scrollbar-width: none; }
+  #hlist::-webkit-scrollbar { display: none; }
+  #hlist h3 { margin: 0; padding: 22px 0 10px; font-size: 17px; font-weight: 400; color: #8a8a8e;
+    border-bottom: 0.5px solid rgba(255,255,255,0.18); }
+  #hlist .r { height: 82px; border-bottom: 0.5px solid rgba(255,255,255,0.18); padding-top: 17px; }
+  #hlist .r small { display: block; font-size: 15px; color: #8a8a8e; }
+  #hlist .r div { font-size: 20px; margin-top: 5px; }
+  #hempty { color: #8a8a8e; text-align: center; font-size: 17px; padding-top: 120px; }
+
+  /* ---- mode menu (grows out of the calculator button) ---- */
+  #menu { position: absolute; left: 170.5px; top: 62px; width: 249px; height: 208px; border-radius: 34px;
+    background: rgba(36,36,36,0.88); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 30px rgba(0,0,0,0.4);
+    transform-origin: 227px 22px; transform: scale(0.18, 0.21); opacity: 0; filter: blur(8px); pointer-events: none;
+    transition: transform .3s cubic-bezier(.3,1.15,.5,1), opacity .2s, filter .25s; }
+  #menu.on { transform: none; opacity: 1; filter: none; pointer-events: auto; }
+  #menu .m { position: absolute; left: 0; right: 0; height: 42px; font-size: 17px; display: flex; align-items: center; }
+  #menu .m svg { position: absolute; left: 41px; width: 26px; height: 22px; overflow: visible; }
+  #menu .m span { position: absolute; left: 79px; }
+  #menu .m .chk { left: 20px; }
+  #modebtn.hid { opacity: 0; transition: opacity .15s; }
+  #menu hr { position: absolute; left: 24px; right: 24px; top: 146px; margin: 0; border: 0; border-top: 0.5px solid rgba(255,255,255,0.18); }
+  #catch { position: absolute; inset: 0; display: none; }
+  #catch.on { display: block; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="glassbtn" id="histbtn"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9.4" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M11 5.2V11H6.4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="glassbtn" id="modebtn"><svg width="16" height="23" viewBox="0 0 16 23"><rect x="0" y="0" width="16" height="23" rx="3.6" fill="#fff"/><rect x="2.4" y="2.4" width="11.2" height="4.4" rx="1.2" fill="#1c1c1c"/><g fill="#1c1c1c"><circle cx="4" cy="10.2" r="1.35"/><circle cx="8" cy="10.2" r="1.35"/><circle cx="12" cy="10.2" r="1.35"/><circle cx="4" cy="13.9" r="1.35"/><circle cx="8" cy="13.9" r="1.35"/><circle cx="12" cy="13.9" r="1.35"/><circle cx="4" cy="17.6" r="1.35"/><circle cx="8" cy="17.6" r="1.35"/><circle cx="12" cy="17.6" r="1.35"/></g></svg></div>
+
+  <div id="expr"></div>
+  <div id="main">0</div>
+
+  <div id="pad">
+    <div class="k f" data-k="back"><svg width="40" height="30" viewBox="0 0 40 30"><path d="M12.6 2.3h22.4a3.6 3.6 0 0 1 3.6 3.6v18.2a3.6 3.6 0 0 1-3.6 3.6H12.6a3.6 3.6 0 0 1-2.6-1.1L2.2 17.3a3.3 3.3 0 0 1 0-4.6L10 4.4a3.6 3.6 0 0 1 2.6-2.1z" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M18.5 9.6l10.8 10.8M29.3 9.6L18.5 20.4" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></div>
+    <div class="k f" data-k="clear" id="clear">AC</div>
+    <div class="k f" data-k="%"><svg width="34" height="34" viewBox="0 0 34 34"><g fill="none" stroke="#fff" stroke-width="2.4"><ellipse cx="7.6" cy="8.4" rx="5.4" ry="6.8"/><ellipse cx="26.4" cy="25.6" rx="5.4" ry="6.8"/></g><path d="M27.5 1.5L6.5 32.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></div>
+    <div class="k o" data-k="÷"><svg width="30" height="26" viewBox="0 0 30 26"><path d="M1.5 13h27" stroke="#fff" stroke-width="2.9" stroke-linecap="round"/><circle cx="15" cy="3.3" r="2.9" fill="#fff"/><circle cx="15" cy="22.7" r="2.9" fill="#fff"/></svg></div>
+    <div class="k" data-k="7">7</div><div class="k" data-k="8">8</div><div class="k" data-k="9">9</div>
+    <div class="k o" data-k="×"><svg width="26" height="26" viewBox="0 0 26 26"><path d="M2 2l22 22M24 2L2 24" stroke="#fff" stroke-width="2.9" stroke-linecap="round"/></svg></div>
+    <div class="k" data-k="4">4</div><div class="k" data-k="5">5</div><div class="k" data-k="6">6</div>
+    <div class="k o" data-k="−"><svg width="30" height="4" viewBox="0 0 30 4"><path d="M1.5 2h27" stroke="#fff" stroke-width="2.9" stroke-linecap="round"/></svg></div>
+    <div class="k" data-k="1">1</div><div class="k" data-k="2">2</div><div class="k" data-k="3">3</div>
+    <div class="k o" data-k="+"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M1.5 15h27M15 1.5v27" stroke="#fff" stroke-width="2.9" stroke-linecap="round"/></svg></div>
+    <div class="k" data-k="neg"><svg width="38" height="36" viewBox="0 0 38 36"><path d="M2 8.5h11M7.5 3v11M29 2L11 34M22 30.5h14" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+    <div class="k" data-k="0">0</div>
+    <div class="k" data-k="."><svg width="6" height="34" viewBox="0 0 6 34"><circle cx="3" cy="29.5" r="2.4" fill="#fff"/></svg></div>
+    <div class="k o" data-k="="><svg width="27" height="16" viewBox="0 0 27 16"><path d="M1.5 2h24M1.5 14h24" stroke="#fff" stroke-width="2.9" stroke-linecap="round"/></svg></div>
+  </div>
+
+  <div id="dim"></div>
+  <div id="sheet">
+    <div id="grab"></div>
+    <div id="shead"><div class="sbtn" id="hedit">Edit</div><div class="sbtn" id="hclose"><svg width="17" height="17" viewBox="0 0 17 17"><path d="M1.5 1.5l14 14M15.5 1.5l-14 14" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/></svg></div></div>
+    <div id="hlist"></div>
+  </div>
+
+  <div id="catch"></div>
+  <div id="menu">
+    <div class="m" style="top:10px"><span class="chk">✓</span><svg viewBox="0 0 26 22"><g stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M1 5.5h7M4.5 2v7M15 5.5h8M1.5 13.5l6 6M7.5 13.5l-6 6M15 16.5h8"/></g><circle cx="19" cy="13" r="1.1" fill="#fff"/><circle cx="19" cy="20" r="1.1" fill="#fff"/></svg><span>Basic</span></div>
+    <div class="m" style="top:52px"><svg viewBox="0 0 26 22"><text x="0" y="17" fill="#fff" font-size="17" font-style="italic" font-family="-apple-system">ƒ</text><text x="8" y="16" fill="#fff" font-size="15" font-family="-apple-system">(x)</text></svg><span>Scientific</span></div>
+    <div class="m" style="top:94px"><svg viewBox="0 0 26 22"><g stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M3 2l3 4 3-4M6 6v4M1.5 12h20M11 1.5v19M14 15l5 5M19 15l-5 5"/></g></svg><span>Math Notes</span></div>
+    <hr>
+    <div class="m" style="top:157px"><svg viewBox="0 0 26 22"><g stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M23 6.5H3M7.5 2L3 6.5 7.5 11M3 15.5h20M18.5 11l4.5 4.5-4.5 4.5"/></g></svg><span>Convert</span></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const stage = $('stage'), root = document.documentElement;
+
+  // ---- fit: same approach as the Clock app (no status-bar-style meta; the web view starts below the status bar and
+  // reaches the bottom edge, so shift up by the status bar height T and measure from the top of the physical screen) ----
+  const H = (screen && screen.height) ? screen.height : 956;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden';
+  document.body.appendChild(probe);
+  function fit() {
+    const s = innerWidth / 440, vh = innerHeight;
+    const T = navigator.standalone && probe.offsetHeight === 0 ? Math.max(0, H - vh) : 0;
+    const SH = (navigator.standalone ? H : vh + T);
+    root.style.setProperty('--s', s); root.style.setProperty('--T', T + 'px'); root.style.setProperty('--SH', SH / s + 'px');
+    render();
+  }
+
+  // ---- calculator ----
+  // tokens alternate number strings ("789", "-5", "0.5", "50%") and operators (+ − × ÷).
+  const OPS = '+−×÷', MAXD = 9;
+  let tok = [], done = null, lastOp = null;   // done = {expr, result} right after "="
+  const isOp = t => OPS.includes(t);
+  const fmtNum = s => {                        // typed entry: group the integer part, keep what was typed after "."
+    const pct = s.endsWith('%'); if (pct) s = s.slice(0, -1);
+    const neg = s.startsWith('-'); if (neg) s = s.slice(1);
+    const [i, f] = s.split('.');
+    const g = (i || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (neg ? '−' : '') + g + (f !== undefined ? '.' + f : '') + (pct ? '%' : '');
+  };
+  const fmtTok = (t, k) => isOp(t) ? t : (k > 0 && t.startsWith('-') ? '(' + fmtNum(t) + ')' : fmtNum(t));
+  const showTok = a => a.map(fmtTok).join('');
+  function fmtVal(v) {
+    if (!isFinite(v)) return 'Error';
+    v = parseFloat(v.toPrecision(12));
+    const a = Math.abs(v);
+    if (a !== 0 && (a >= 1e15 || a < 1e-9)) return v.toExponential(8).replace(/\.?0+e/, 'e').replace('e+', 'e').replace('-', '−');
+    return v.toLocaleString('en-US', { maximumFractionDigits: 10 }).replace('-', '−');
+  }
+  const raw = v => String(parseFloat(v.toPrecision(12)));
+  function evaluate(a) {
+    a = a.slice(); if (a.length && isOp(a[a.length - 1])) a.pop();
+    if (!a.length) return 0;
+    // two passes for precedence; "x%" after + or − is that percent of everything before it (200+10% = 220)
+    let sum = 0, term = null, sign = 1, mul = null;
+    for (let i = 0; i < a.length; i++) {
+      const t = a[i];
+      if (isOp(t)) { if (t === '+' || t === '−') { sum += sign * term; term = null; sign = t === '+' ? 1 : -1; } else mul = t; continue; }
+      let v = parseFloat(t);
+      if (t.endsWith('%')) v = (term === null && i > 0 && sign !== 0 && (a[i - 1] === '+' || a[i - 1] === '−')) ? sum * v / 100 : v / 100;
+      if (term === null) term = v; else term = mul === '×' ? term * v : term / v;
+    }
+    return sum + sign * term;
+  }
+
+  const mainEl = $('main'), exprEl = $('expr'), clearEl = $('clear');
+  function fitText(el, size, max) {
+    el.style.fontSize = size + 'px';
+    const w = el.scrollWidth; if (w > max) el.style.fontSize = Math.max(size * max / w, 18) + 'px';
+  }
+  function render() {
+    if (done) { exprEl.textContent = done.expr; mainEl.textContent = done.result; }
+    else { exprEl.textContent = ''; mainEl.textContent = tok.length ? showTok(tok) : '0'; }
+    fitText(mainEl, 75, 404); fitText(exprEl, 33, 404);
+    clearEl.textContent = (!done && tok.length) ? 'C' : 'AC';
+  }
+
+  function press(k) {
+    if (k === 'clear') { tok = []; done = null; lastOp = null; return; }
+    if (k === '=') return equals();
+    if (done) {                                          // continue from a result, or start fresh
+      if (isOp(k) || k === '%' || k === 'neg' || k === 'back') tok = [raw(done.value)]; else tok = [];
+      done = null;
+    }
+    const last = tok[tok.length - 1], num = last !== undefined && !isOp(last);
+    if (k === 'back') {
+      if (!tok.length) return;
+      if (!num) { tok.pop(); return; }
+      let s = last.slice(0, -1); if (s === '-' || s === '') { tok.pop(); return; }
+      tok[tok.length - 1] = s; return;
+    }
+    if (isOp(k)) {
+      if (!tok.length) tok = ['0'];
+      if (!num) { if (last === k && armForce(k)) return; tok[tok.length - 1] = k; } else tok.push(k);
+      return;
+    }
+    if (k === '%') { if (num && !last.endsWith('%')) tok[tok.length - 1] = last + '%'; return; }
+    if (k === 'neg') {
+      if (num) tok[tok.length - 1] = last.startsWith('-') ? last.slice(1) : '-' + last; else tok.push('-0');
+      return;
+    }
+    // digit or "."
+    if (num && last.endsWith('%')) return;
+    if (!num) { tok.push(k === '.' ? '0.' : k); return; }
+    const neg = last.startsWith('-'), body = neg ? last.slice(1) : last;
+    if (k === '.') { if (!body.includes('.')) tok[tok.length - 1] = last + '.'; return; }
+    if (body.replace('.', '').length >= MAXD) return;
+    tok[tok.length - 1] = (neg ? '-' : '') + (body === '0' ? k : body + k);
+  }
+  function equals() {
+    let a;
+    if (done) { if (!lastOp) return; a = [raw(done.value), lastOp[0], lastOp[1]]; }   // repeat "=": 912 = → 912+123
+    else {
+      a = tok.slice(); if (a.length && isOp(a[a.length - 1])) a.pop();
+      if (!a.length || (a.length === 1 && !a[0].endsWith('%'))) return;
+      lastOp = a.length >= 3 ? [a[a.length - 2], a[a.length - 1]] : null;
+    }
+    const v = evaluate(a), expr = showTok(a), result = fmtVal(v);
+    done = { expr, result, value: v }; tok = [];
+    if (a.length >= 3) saveHist(expr, result);
+  }
+
+  // ---- force: with a target set, pressing + or − a second time arms it. From then on every touch anywhere types the
+  // next character of the difference; once it's all typed, touches do nothing until "=" (taken only after a 1 s lull,
+  // so the last random poke can't land on it). ----
+  const TKEY = 'calc.target';
+  let target = null, force = null;
+  try { const t = localStorage.getItem(TKEY); if (t) target = parseFloat(t); } catch (e) {}
+  function armForce(op) {
+    if (target === null) return false;
+    const S = evaluate(tok.slice(0, -1));
+    let D = target - S; const o = D >= 0 ? '+' : '−';
+    tok[tok.length - 1] = o;
+    force = { s: raw(Math.abs(D)), i: 0, last: 0 };
+    return true;
+  }
+  function forceTap(e) {
+    const now = performance.now(), key = e.target.closest && e.target.closest('.k'), gap = now - force.last;
+    force.last = now;
+    if (key) flash(key);
+    if (force.i < force.s.length) {
+      const c = force.s[force.i++];
+      if (force.i === 1) tok.push(c); else tok[tok.length - 1] += c;
+    } else if (key && key.dataset.k === '=' && gap > 1000) { force = null; equals(); }
+    render();
+  }
+
+  // ---- keys & press animation ----
+  function flash(el) {
+    el.classList.add('p'); const t0 = performance.now();
+    const up = () => { removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+      setTimeout(() => el.classList.remove('p'), Math.max(0, 80 - (performance.now() - t0))); };
+    addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  }
+  document.addEventListener('pointerdown', e => {
+    if (force) { e.preventDefault(); e.stopPropagation(); forceTap(e); }
+  }, true);
+  document.querySelectorAll('.k').forEach(k => k.addEventListener('pointerdown', () => {
+    flash(k); press(k.dataset.k); render();
+  }));
+
+  // ---- target setter: type the number, then hold the history button ~0.7 s. The display clears to 0 (the only sign).
+  // Hold the calculator button to peek at the current target. ----
+  function hold(el, ms, onHold, onTap, onRelease) {
+    let timer = 0, held = false;
+    el.addEventListener('pointerdown', () => {
+      el.classList.add('p'); held = false;
+      timer = setTimeout(() => { held = true; onHold(); }, ms);
+    });
+    const end = ev => {
+      if (!timer && !held) return;
+      clearTimeout(timer); timer = 0; el.classList.remove('p');
+      if (held) { held = false; onRelease && onRelease(); } else if (ev.type === 'pointerup') onTap();
+    };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('pointerleave', end);
+  }
+  hold($('histbtn'), 700, () => {
+    const t = done ? done.value : evaluate(tok);
+    if (!t) { target = null; try { localStorage.removeItem(TKEY); } catch (e) {} }
+    else { target = t; try { localStorage.setItem(TKEY, String(t)); } catch (e) {} }
+    tok = []; done = null; lastOp = null; render();
+  }, openHist);
+  hold($('modebtn'), 700, () => { mainEl.textContent = target === null ? '0' : fmtVal(target); fitText(mainEl, 75, 404); },
+    openMenu, render);
+
+  // ---- history (kept in this app's own storage) ----
+  const HKEY = 'calc.hist';
+  const loadHist = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
+  function saveHist(e, r) {
+    const h = loadHist(); h.unshift({ e, r, t: Date.now() });
+    try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 200))); } catch (x) {}
+  }
+  function renderHist() {
+    const h = loadHist(), day = 864e5, today = new Date().setHours(0, 0, 0, 0);
+    const label = t => t >= today ? 'Today' : t >= today - 7 * day ? 'Previous 7 Days' : t >= today - 30 * day ? 'Previous 30 Days'
+      : new Date(t).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    let html = '', cur = '';
+    h.forEach((x, i) => {
+      const l = label(x.t); if (l !== cur) { cur = l; html += `<h3>${l}</h3>`; }
+      html += `<div class="r" data-i="${i}"><small>${x.e}</small><div>${x.r}</div></div>`;
+    });
+    $('hlist').innerHTML = html || '<div id="hempty">No History</div>';
+  }
+  const sheet = $('sheet'), dim = $('dim');
+  const MED = 0, LARGE = 451 - 62;          // sheet rest positions (px above the medium detent)
+  let sy = 0;                               // current lift
+  function placeSheet(y, anim) { sheet.classList.toggle('anim', !!anim); sheet.style.top = (451 - Math.max(0, y)) + 'px';
+    sheet.style.transform = y < 0 ? `translateY(${-y}px)` : 'none'; }
+  function openHist() {
+    renderHist(); $('hlist').scrollTop = 0; sy = MED;
+    sheet.classList.remove('anim'); sheet.style.top = '451px'; sheet.style.transform = 'translateY(110%)';
+    sheet.offsetHeight; placeSheet(MED, true); dim.classList.add('on');
+  }
+  function closeHist() { sheet.classList.add('anim'); sheet.style.transform = 'translateY(110%)'; dim.classList.remove('on'); }
+  $('hclose').addEventListener('click', closeHist);
+  dim.addEventListener('click', closeHist);
+  $('hlist').addEventListener('click', e => {
+    const r = e.target.closest('.r'); if (!r) return;
+    const x = loadHist()[+r.dataset.i]; tok = [x.r.replace(/,/g, '').replace('−', '-')]; done = null; render(); closeHist();
+  });
+  // drag the top of the sheet: up to the large detent, down to dismiss
+  let dragY = null, dragFrom = 0;
+  $('shead').addEventListener('pointerdown', e => { if (e.target.closest('.sbtn')) return; dragY = e.clientY; dragFrom = sy; sheet.classList.remove('anim'); });
+  $('grab').addEventListener('pointerdown', e => { dragY = e.clientY; dragFrom = sy; sheet.classList.remove('anim'); });
+  addEventListener('pointermove', e => { if (dragY === null) return; const s = parseFloat(getComputedStyle(root).getPropertyValue('--s')) || 1;
+    sy = Math.min(LARGE + 20, dragFrom + (dragY - e.clientY) / s); placeSheet(sy, false); });
+  addEventListener('pointerup', () => {
+    if (dragY === null) return; dragY = null;
+    if (sy < -90) { closeHist(); return; }
+    sy = sy > (dragFrom === LARGE ? LARGE - 90 : 90) ? LARGE : MED; placeSheet(sy, true);
+  });
+
+  // ---- mode menu: opens, stays put; any touch closes it ----
+  const menu = $('menu'), cat = $('catch');
+  function openMenu() { menu.classList.add('on'); cat.classList.add('on'); $('modebtn').classList.add('hid'); }
+  function closeMenu() { menu.classList.remove('on'); cat.classList.remove('on'); $('modebtn').classList.remove('hid'); }
+  cat.addEventListener('pointerdown', closeMenu);
+  menu.querySelectorAll('.m').forEach(m => m.addEventListener('click', closeMenu));
+
+  addEventListener('resize', fit); fit();
+  if ('serviceWorker' in navigator && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
